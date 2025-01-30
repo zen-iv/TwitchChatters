@@ -60,3 +60,4 @@ __pycache__/config_loader.cpython-310.pyc
 __pycache__/bot.cpython-310.pyc
 __pycache__/audio_processor.cpython-310.pyc
 .env
+config.yaml
