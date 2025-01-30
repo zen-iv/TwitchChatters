@@ -1,0 +1,9 @@
+numpy
+yaml
+pynput
+vosk
+pyAudioAnalysis
+python-dotenv
+twitchio
+aiohttp
+pyaudio
