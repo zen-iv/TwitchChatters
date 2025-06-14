@@ -2,150 +2,88 @@
 from tkinter import ttk, messagebox
 import threading
 import os
+import random
 from multiprocessing import Process, Queue
 import time
-from pynput import keyboard 
+from pynput import keyboard
 from shared import BROADCAST_COMMAND
-
-BROADCAST_COMMAND = "broadcast_plus"
+from modules.twitch_bot import bot_runner
 
 class BotGUI(tk.Tk):
     def __init__(self, config, audio_proc, shared_queue):
         super().__init__()
         self.title("Twitch Bot Controller")
-        self.geometry("800x600")
+        self.geometry("800x400")
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-
         self.config = config
         self.audio_proc = audio_proc
         self.shared_queue = shared_queue
         self.running = True
         self.bot_processes = {}
-
-        self.stats = {
-            'messages_sent': 0,
-            'laughter_detected': 0,
-            'last_action': 'Нет действий',
-            'model_status': '✔️ Подключена' if os.path.exists(config['stt']['model_path']) else '❌ Ошибка'
-        }
-
-        if self.stats['model_status'].startswith('❌'):
-            messagebox.showerror("Ошибка", f"Модель STT не найдена по пути: {config['stt']['model_path']}")
-
+        self.bot_states = {}
         self.create_widgets()
         self.setup_hotkeys()
-        self.update_stats()
 
     def create_widgets(self):
-        self.notebook = ttk.Notebook(self)
-        
-        # Вкладка управления
-        self.control_frame = ttk.Frame(self.notebook)
-        self.create_control_tab()
-        
-        # Вкладка статистики
-        self.stats_frame = ttk.Frame(self.notebook)
-        self.create_stats_tab()
-        
-        # Горячие клавиши
-        self.hotkeys_frame = ttk.Frame(self.notebook)
-        self.create_hotkeys_tab()
+        main_frame = ttk.Frame(self)
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-        self.notebook.add(self.control_frame, text="Управление")
-        self.notebook.add(self.stats_frame, text="Статистика")
-        self.notebook.add(self.hotkeys_frame, text="Горячие клавиши")
-        self.notebook.pack(expand=True, fill='both')
+        control_panel = ttk.LabelFrame(main_frame, text="Управление ботами")
+        control_panel.pack(fill='x', pady=5)
 
-    def create_control_tab(self):
-        self.start_btn = ttk.Button(self.control_frame, text="Старт", command=self.start_bots)
-        self.start_btn.grid(row=0, column=0, padx=10, pady=5)
+        self.start_btn = ttk.Button(control_panel, text="Старт", command=self.start_bots)
+        self.start_btn.pack(side='left', padx=5)
         
-        self.stop_btn = ttk.Button(self.control_frame, text="Стоп", command=self.stop_bots, state=tk.DISABLED)
-        self.stop_btn.grid(row=0, column=1, padx=10, pady=5)
+        self.stop_btn = ttk.Button(control_panel, text="Стоп", command=self.stop_bots, state=tk.DISABLED)
+        self.stop_btn.pack(side='left', padx=5)
 
-        ttk.Label(self.control_frame, text="Статус модели:").grid(row=1, column=0, sticky='w', padx=10)
-        self.model_status_label = ttk.Label(self.control_frame, text=self.stats['model_status'])
-        self.model_status_label.grid(row=1, column=1, sticky='w')
+        bots_frame = ttk.LabelFrame(main_frame, text="Аккаунты")
+        bots_frame.pack(fill='both', expand=True, pady=5)
 
-        self.status_labels = {}
+        self.bot_checkboxes = {}
         for idx, acc in enumerate(self.config['accounts']):
-            lbl = ttk.Label(self.control_frame, text=f"{acc['username']}: Неактивен")
-            lbl.grid(row=idx+2, column=0, sticky='w', padx=10)
-            self.status_labels[acc['username']] = lbl
+            frame = ttk.Frame(bots_frame)
+            frame.pack(fill='x', pady=2)
+            
+            var = tk.BooleanVar(value=True)
+            cb = ttk.Checkbutton(frame, text=acc['username'], variable=var)
+            cb.pack(side='left')
+            self.bot_checkboxes[acc['username']] = var
+            
+            status_lbl = ttk.Label(frame, text="Неактивен")
+            status_lbl.pack(side='right')
+            self.bot_states[acc['username']] = status_lbl
 
-    def create_stats_tab(self):
-        self.stats_vars = {
-            'messages_sent': tk.StringVar(value="0"),
-            'laughter_detected': tk.StringVar(value="0"),
-            'last_action': tk.StringVar(value="Нет действий")
-        }
+        action_panel = ttk.LabelFrame(main_frame, text="Быстрые действия")
+        action_panel.pack(fill='x', pady=5)
 
-        for idx, (key, var) in enumerate(self.stats_vars.items()):
-            ttk.Label(self.stats_frame, text=key.replace('_', ' ').title()+":").grid(row=idx, column=0, sticky='w', padx=10)
-            ttk.Label(self.stats_frame, textvariable=var).grid(row=idx, column=1, sticky='w')
-
-    def create_hotkeys_tab(self):
-        ttk.Label(self.hotkeys_frame, text="Горячие клавиши:").grid(row=0, column=0, sticky='w', padx=10)
+        self.plus_btn = ttk.Button(action_panel, text="Отправить + (F13)", command=self.force_plus)
+        self.plus_btn.pack(side='left', padx=5)
         
-        self.emote_btn = ttk.Button(
-            self.hotkeys_frame, 
-            text="Спам смайлами (F13)", 
-            command=self.send_emotes_spam
-        )
-        self.emote_btn.grid(row=1, column=0, padx=10, pady=5, sticky='w')
-        
-        self.plus_btn = ttk.Button(
-            self.hotkeys_frame,
-            text="Принудительный + (F14)",
-            command=self.force_plus
-        )
-        self.plus_btn.grid(row=2, column=0, padx=10, pady=5, sticky='w')
+        self.laugh_btn = ttk.Button(action_panel, text="Смех (F15)", command=self.send_laughter)
+        self.laugh_btn.pack(side='left', padx=5)
 
     def setup_hotkeys(self):
         def on_press(key):
             try:
                 if key == keyboard.Key.f13:
-                    print("[HOTKEY] Нажата F13 - Спам смайлами")
-                    self.send_emotes_spam()
-                elif key == keyboard.Key.f14:
-                    print("[HOTKEY] Нажата F14 - Принудительный +")
                     self.force_plus()
+                elif key == keyboard.Key.f15:
+                    self.send_laughter()
             except Exception as e:
-                print(f"[HOTKEY] Ошибка: {e}")
+                print(f"Ошибка в обработчике горячих клавиш: {e}")
+        
+        self.listener = keyboard.Listener(on_press=on_press)
+        self.listener.daemon = True
+        self.listener.start()
 
-        listener = keyboard.Listener(on_press=on_press)
-        listener.daemon = True
-        listener.start()
-
-    def send_emotes_spam(self):
-        print("[ACTION] Запущен спам смайлами")
-        self.shared_queue.put(('emote_spam', None))
-        self.stats['last_action'] = "Спам смайлами"
-        self.stats['messages_sent'] += 5
+    def send_laughter(self):
+        self.shared_queue.put(('laughter', None))
+        print("Триггер смеха активирован")
 
     def force_plus(self):
-        print("[ACTION] Принудительная отправка '+'")
-        self.shared_queue.put((BROADCAST_COMMAND, None))
-        self.stats['last_action'] = "Принудительный +"
-
-    def update_stats(self):
-        if not self.running: return
-        
-        try:
-            for acc in self.config['accounts']:
-                username = acc['username']
-                process = self.bot_processes.get(username)
-                status = "Неактивен"
-                if process and process.is_alive():
-                    status = "Активен"
-                self.status_labels[username].config(text=f"{username}: {status}")
-        except Exception as e:
-            print(f"Ошибка обновления статусов: {e}")
-
-        for key, var in self.stats_vars.items():
-            var.set(str(self.stats[key]))
-
-        self.after(1000, self.update_stats)
+        self.shared_queue.put(BROADCAST_COMMAND)
+        print("Триггер + активирован")
 
     def start_bots(self):
         self.start_btn.config(state=tk.DISABLED)
@@ -154,43 +92,39 @@ class BotGUI(tk.Tk):
 
     def activate_bots(self):
         try:
-            from main import bot_runner  # Импорт внутри метода
-            for acc in self.config['accounts']:
+            accounts = [acc for acc in self.config['accounts'] 
+                       if self.bot_checkboxes[acc['username']].get()]
+            
+            random.shuffle(accounts)
+            delay_config = self.config.get('behavior', {}).get('activation_delay', 0.5)
+            
+            for acc in accounts:
                 username = acc['username']
                 if username not in self.bot_processes:
-                    personality = next(p for p in self.config['personalities'] if p['name'] == acc['personality'])
-                    
-                    p = Process(
-                        target=bot_runner,
-                        args=(
-                            acc,
-                            personality,
-                            self.config['ai'],
-                            self.shared_queue,
-                            len(self.config['accounts'])
-                        ),
-                        daemon=True
-                    )
+                    personality = self.config['personalities'].get(acc['personality'])
+                    if not personality:
+                        raise ValueError(f"Персонаж {acc['personality']} не найден")
+                        
+                    p = Process(target=bot_runner, 
+                                args=(acc, personality, self.config['ai'], self.shared_queue))
                     self.bot_processes[username] = p
                     p.start()
-                    time.sleep(1)
+                    self.bot_states[username].config(text="Запускается...")
+                    time.sleep(random.uniform(delay_config*0.8, delay_config*1.2))
+
         except Exception as e:
-            print(f"Ошибка активации ботов: {e}")
+            messagebox.showerror("Ошибка", f"Ошибка запуска ботов: {str(e)}")
 
     def stop_bots(self):
         try:
-            if self.audio_proc and hasattr(self.audio_proc, 'terminate'):
-                self.audio_proc.terminate()
-                self.audio_proc.join()
-            
             for username, process in self.bot_processes.items():
-                if process and process.is_alive():
+                if process.is_alive():
                     process.terminate()
                     process.join()
-            
+                self.bot_states[username].config(text="Неактивен")
             self.bot_processes.clear()
         except Exception as e:
-            print(f"Ошибка остановки: {e}")
+            print(f"Ошибка остановки: {e}")     
         finally:
             self.start_btn.config(state=tk.NORMAL)
             self.stop_btn.config(state=tk.DISABLED)
@@ -198,4 +132,7 @@ class BotGUI(tk.Tk):
     def on_close(self):
         self.running = False
         self.stop_bots()
+        if self.audio_proc:
+            self.audio_proc.terminate()
+        self.listener.stop()
         self.destroy()

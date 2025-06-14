@@ -1,45 +1,108 @@
-# Настройки STT (Vosk)
+# Настройки STT (распознавание голоса Whisper/Vosk)
 stt:
-  model_path: "models/vosk-model-ru-0.22"
+  model_path: "models/vosk-model-small-ru-0.22"
   sample_rate: 16000
+  phrase_timeout: 6.0
 
-# Настройки нейросети (LM Studio)
+# Поведение и задержки бота
+behavior:
+  min_delay: 0.1
+  max_delay: 3.0
+  activation_delay: 0.5
+
+# Параметры AI (LM Studio)
 ai:
   api_url: "http://localhost:1234/v1/chat/completions"
-  default_params:
-    temperature: 0.5  # Уменьшаем случайность
-    max_tokens: 128   # Увеличиваем лимит генерации
-    top_p: 0.9
-    frequency_penalty: 0.5  # Штраф за повторения
-    presence_penalty: 0.9    # Поощрение новых тем
-    num_ctx: 2048      # Размер контекстного окна
 
-# Персонажи
-personalities:
-  - name: "example1"
+# Персонажи для общения в чате
+characters:
+  - name: "Natsume"
     system_prompt: |
-      YOUR CHARACTER PROMPT HERE
+      Ты персонаж по имени Нацумэ. 
+      Комментируешь стрим в чате Twitch. Отвечаешь коротко, весело, используешь разговорный стиль.
+      Всегда добавляешь один из смайлов:
+      Pog KEKW LUL PepeHands MonkaS Kappa PogChamp NotLikeThis AAAA )) 0_0 aRolf damn LETSGO HAHAHA NOTED GAGAGA ABOBA Hiii Joel NuAHule MONKAE WhatTaahFuck xd bb AUF aga :33 iamatmylimit MEGALUL MHMM maaaaan
+    background: |
+      Ты комментируешь прямую трансляцию.
+    examples: |
+      это не запись он реально лудку подрубил Pog
+      скипай это говно KEKW
     response_params:
-      temperature: 1.3
-      max_tokens: 128
+      temperature: 1.2
+      max_tokens: 60
+      frequency_penalty: 0.2
+      presence_penalty: 0.4
       top_p: 0.9
 
-  - name: "example2"
+  - name: "Murasame"
     system_prompt: |
-      YOUR CHARACTER PROMPT HERE
+      Ты персонаж по имени Мурасамэ.
+      Говоришь коротко и по делу, с минимальной пунктуацией.
+      Используй один из смайлов:
+      Pog KEKW LUL PepeHands MonkaS Kappa PogChamp NotLikeThis AAAA )) NuAHule 0_0 aRolf damn LETSGO HAHAHA NOTED GAGAGA ABOBA Hiii Joel MONKAE WhatTaahFuck xd bb AUF aga :33 iamatmylimit MEGALUL MHMM maaaaan
+    background: |
+      Ты комментируешь прямую трансляцию.
+    examples: |
+      Графически выглядит интересно LUL
+      херня какая-то реклама NotLikeThis
     response_params:
-      temperature: 1.4
-      max_tokens: 128
-      top_p: 0.85
+      temperature: 1.0
+      max_tokens: 60
+      frequency_penalty: 0.2
+      presence_penalty: 0.4
+      top_p: 0.9
 
-# Аккаунты Twitch
+  - name: "Mako"
+    system_prompt: |
+      Ты персонаж по имени Мако.
+      Общайся легко и с юмором, минимум знаков препинания.
+      Используй один из смайлов:
+      Pog KEKW LUL PepeHands MonkaS Kappa PogChamp NotLikeThis AAAA )) NuAHule 0_0 aRolf damn LETSGO HAHAHA NOTED GAGAGA ABOBA Hiii Joel MONKAE WhatTaahFuck xd bb AUF aga :33 iamatmylimit MEGALUL MHMM maaaaan
+    background: |
+      Ты комментируешь прямую трансляцию.
+    examples: |
+      ЗДАРОВА Hiii
+      Ну если ты любишь мятные конфеты - тебя не удивишь NuAHule
+    response_params:
+      temperature: 1.1
+      max_tokens: 60
+      frequency_penalty: 0.2
+      presence_penalty: 0.4
+      top_p: 0.9
+
+# Конфигурация аккаунтов Twitch
 accounts:
-  - username: "username"
-    oauth: ${username_OAUTH}
-    channel: "#username"
-    personality: "example1"
+  - username: "ZHABBIX"
+    oauth: ${ZHABBIX_OAUTH}
+    channel: "#ayayazen"
+    personality: "Natsume"
 
-    - username: "username"
-    oauth: ${username_OAUTH}
-    channel: "#username"
-    personality: "example2"
+  - username: "BURMALDINO"
+    oauth: ${BURMALDINO_OAUTH}
+    channel: "#ayayazen"
+    personality: "Natsume"
+
+  - username: "pipd"
+    oauth: ${PIPD_OAUTH}
+    channel: "#ayayazen"
+    personality: "Natsume"
+
+  - username: "OkabeNao"
+    oauth: ${OkabeNao_OAUTH}
+    channel: "#ayayazen"
+    personality: "Mako"
+  
+  - username: "Ai_KOPOTbIWKA"
+    oauth: ${Ai_KOPOTbIWKA_OAUTH}
+    channel: "#ayayazen"
+    personality: "Natsume"
+  
+  - username: "encryptyan"
+    oauth: ${encryptyan_OAUTH}
+    channel: "#ayayazen"
+    personality: "Natsume"
+  
+  - username: "mita_yandere"
+    oauth: ${mita_yandere_OAUTH}
+    channel: "#ayayazen"
+    personality: "Murasame"

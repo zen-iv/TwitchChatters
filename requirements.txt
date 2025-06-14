@@ -7,3 +7,7 @@ python-dotenv
 twitchio
 aiohttp
 pyaudio
+torch
+whisper
+sounddevice
+pyAudioAnalysis
