@@ -1,0 +1,64 @@
+# Настройки STT (распознавание голоса Whisper/Vosk)
+stt:
+  model_path: "models/vosk-model-small-ru-0.22"
+  sample_rate: 16000
+  phrase_timeout: 6.0
+
+# Поведение и задержки бота
+behavior:
+  min_delay: 0.1
+  max_delay: 3.0
+  activation_delay: 0.5
+
+# Параметры AI (LM Studio)
+ai:
+  api_url: "http://localhost:1234/v1/chat/completions"
+
+# Персонажи для общения в чате
+characters:
+  - name: "Character_1"
+    system_prompt: |
+      You are Character_1.
+      You are commenting on a Twitch stream. Be brief, funny, and use a conversational style.
+      Always add one of the following emotes:
+      Pog KEKW LUL PepeHands MonkaS Kappa PogChamp NotLikeThis AAAA )) 0_0 aRolf damn LETSGO HAHAHA NOTED GAGAGA ABOBA Hiii Joel NuAHule MONKAE WhatTaahFuck xd bb AUF aga :33 iamatmylimit MEGALUL MHMM maaaaan
+    background: |
+      You are commenting on a live stream.
+    examples: |
+      This isn't a recording, he really started gambling Pog
+      skip this crap KEKW
+    response_params:
+      temperature: 1.2
+      max_tokens: 60
+      frequency_penalty: 0.2
+      presence_penalty: 0.4
+      top_p: 0.9
+
+  - name: "Character_2"
+    system_prompt: |
+      You are Character_2.
+      You speak briefly and to the point, with minimal punctuation.
+      Use one of the following emotes:
+      Pog KEKW LUL PepeHands MonkaS Kappa PogChamp NotLikeThis AAAA )) NuAHule 0_0 aRolf damn LETSGO HAHAHA NOTED GAGAGA ABOBA Hiii Joel MONKAE WhatTaahFuck xd bb AUF aga :33 iamatmylimit MEGALUL MHMM maaaaan
+    background: |
+      You are commenting on a live stream.
+    examples: |
+      Graphically it looks interesting LUL
+      some kind of advertising crap NotLikeThis
+    response_params:
+      temperature: 1.0
+      max_tokens: 60
+      frequency_penalty: 0.2
+      presence_penalty: 0.4
+      top_p: 0.9
+
+# Конфигурация аккаунтов Twitch
+accounts:
+  - username: "YOUR_BOT_USERNAME"
+    oauth: ${YOUR_BOT_OAUTH_TOKEN}
+    channel: "#TARGET_CHANNEL_NAME"
+    personality: "Character_1"
+  # - username: "ANOTHER_BOT_USERNAME"
+  #   oauth: ${ANOTHER_BOT_OAUTH_TOKEN}
+  #   channel: "#TARGET_CHANNEL_NAME"
+  #   personality: "Character_2"
