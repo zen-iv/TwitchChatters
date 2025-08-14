@@ -56,3 +56,8 @@ models/ngc nvcr.txt
 /config.yaml
 /__pycache__
 /whisper_models/small.pt
+modules/__pycache__/__init__.cpython-310.pyc
+modules/__pycache__/ai_client.cpython-310.pyc
+modules/__pycache__/stt.cpython-310.pyc
+modules/__pycache__/twitch_bot.cpython-310.pyc
+modules/__pycache__/utils.cpython-310.pyc
